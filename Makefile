@@ -1,25 +1,34 @@
 # ==============================================================================
+# Build
+
+fmt:
+	go fmt ./...
+
+vet:
+	go vet -v ./...
+
+clean:
+	go clean
+
+# Define targets for commands
+bin/checkout-cli:
+	go build -o bin/checkout-cli ./cmd/checkout-cli
+
+build: clean fmt vet bin/checkout-cli
+
+# ==============================================================================
 # Running tests
 
-test:
+tests:
 	go test ./... -count=1 -v
+
+lint:
 	staticcheck -checks=all ./...
 
 # ==============================================================================
 # Modules support
 
-deps-reset:
-	git checkout -- go.mod
-	go mod tidy
-	go mod vendor
-
 tidy:
-	go mod tidy
-	go mod vendor
-
-deps-upgrade:
-	# go get $(go list -f '{{if not (or .Main .Indirect)}}{{.Path}}{{end}}' -m all)
-	go get -u -t -d -v ./...
 	go mod tidy
 	go mod vendor
 

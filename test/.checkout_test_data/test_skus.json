@@ -1,0 +1,48 @@
+{
+  "skus": [
+    {
+      "name": "A",
+      "prices": [
+        {
+          "units": 1,
+          "price": 50
+        },
+        {
+          "units": 3,
+          "price": 130
+        }
+      ]
+    },
+    {
+      "name": "B",
+      "prices": [
+        {
+          "units": 1,
+          "price": 30
+        },
+        {
+          "units": 2,
+          "price": 45
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "prices": [
+        {
+          "units": 1,
+          "price": 20
+        }
+      ]
+    },
+    {
+      "name": "D",
+      "prices": [
+        {
+          "units": 1,
+          "price": 15
+        }
+      ]
+    }
+  ]
+}
