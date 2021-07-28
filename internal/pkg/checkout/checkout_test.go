@@ -4,18 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/checkout"
-	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/processor"
 	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/sku"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"testing"
 )
 
+type testCase struct {
+	scanInput      string
+	expectedResult int32
+}
+
 func TestCheckoutFlow(t *testing.T) {
-	testCases := []struct {
-		scanInput      string
-		expectedResult int32
-	}{
+	nameFormat := func(testCase *testCase) string {
+		return fmt.Sprintf("Checkout should return total price equal to %d for %s input", testCase.expectedResult, testCase.scanInput)
+	}
+
+	testCases := []testCase{
 		{
 			scanInput:      "AABBCAA",
 			expectedResult: 245,
@@ -39,32 +45,27 @@ func TestCheckoutFlow(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCaseName := fmt.Sprintf("Checkout should return total price equal to %d for %s input", testCase.expectedResult, testCase.scanInput)
-
-		t.Run(testCaseName, func(t *testing.T) {
+		t.Run(nameFormat(&testCase), func(t *testing.T) {
 			catalog := getTestCatalog(t)
 			if catalog == nil {
 				t.Error("Failed to read test json file")
 			}
 
-			if err := processor.Instance.CleanCheckoutHistory(); err != nil {
-				t.Error(err)
-			}
-			if err := processor.Instance.SetSKUCatalog(catalog); err != nil {
-				t.Error(err)
-			}
-			if err := checkout.Instance.Scan(testCase.scanInput); err != nil {
-				t.Error(err)
-			}
-
-			actualResult, err := checkout.Instance.GetTotalPrices()
+			underTest, err := checkout.New(catalog)
 			if err != nil {
 				t.Error(err)
 			}
 
-			if testCase.expectedResult != actualResult {
-				t.Errorf("%d != %d", testCase.expectedResult, actualResult)
+			if err := underTest.Scan(testCase.scanInput); err != nil {
+				t.Error(err)
 			}
+
+			actualResult, err := underTest.GetTotalPrices()
+			if err != nil {
+				t.Error(err)
+			}
+
+			assert.Equal(t, testCase.expectedResult, actualResult)
 		})
 	}
 }
@@ -75,21 +76,21 @@ func TestCheckoutError(t *testing.T) {
 		t.Error("Failed to read test json file")
 	}
 
+	underTest, err := checkout.New(catalog)
+	if err != nil {
+		t.Error(err)
+	}
+
 	t.Run("Checkout should throw error for incorrect SKU names", func(t *testing.T) {
-		if err := processor.Instance.CleanCheckoutHistory(); err != nil {
-			t.Error(err)
-		}
-		if err := processor.Instance.SetSKUCatalog(catalog); err != nil {
-			t.Error(err)
-		}
-		if err := checkout.Instance.Scan("%"); err == nil {
-			t.Error("Scan method should check SKU name")
+		err := underTest.Scan("%")
+		if assert.Error(t, err) {
+			assert.EqualError(t, err, "SKU not found")
 		}
 	})
 }
 
-func getTestCatalog(t *testing.T) *sku.SKUCollection {
-	file, err := os.Open("../../../test/.checkout_test_data/test_skus.json")
+func getTestCatalog(t *testing.T) *sku.Catalog {
+	file, err := os.Open("../../../test/.checkout_test_data/skus.json")
 	defer func() {
 		if err := file.Close(); err != nil {
 			t.Error(err)
@@ -105,7 +106,7 @@ func getTestCatalog(t *testing.T) *sku.SKUCollection {
 		t.Error(err)
 	}
 
-	var catalog sku.SKUCollection
+	var catalog sku.Catalog
 
 	if err := json.Unmarshal(bytes, &catalog); err != nil {
 		t.Error(err)

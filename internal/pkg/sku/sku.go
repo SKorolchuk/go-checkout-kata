@@ -2,10 +2,11 @@ package sku
 
 import (
 	"errors"
+	"fmt"
 )
 
-// SKUCollection represents SKU catalog
-type SKUCollection struct {
+// Catalog represents collection of SKU
+type Catalog struct {
 	SKUs []SKU `json:"skus"`
 }
 
@@ -21,15 +22,52 @@ type PricePerUnit struct {
 	Price int32 `json:"price"`
 }
 
-// FindMinAvailablePrice search the best price for available SKU units
-func (sku *SKU) FindMinAvailablePrice(units int32) (*PricePerUnit, error) {
-	if len(sku.Prices) <= 0 {
+// GetOptimalCheckoutPrice calculate total checkout price
+func (SKU *SKU) GetOptimalCheckoutPrice(unitsToCheckout int32) (int32, error) {
+	result := int32(0)
+
+	if len(SKU.Prices) > 0 && unitsToCheckout > 0 {
+		reminder := unitsToCheckout
+
+		for reminder > 0 {
+			minPrice, err := SKU.findMinAvailablePrice(reminder)
+			if err != nil {
+				return 0, err
+			}
+
+			if minPrice == nil {
+				return 0, fmt.Errorf("SKU=%s prices for %d amount can not be processed", SKU.Name, reminder)
+			}
+
+			result += reminder / minPrice.Units * minPrice.Price
+			reminder = reminder % minPrice.Units
+		}
+	}
+
+	return result, nil
+}
+
+// GetSKUbyName finds SKU by name from Catalog
+func (catalog *Catalog) GetSKUbyName(skuName rune) *SKU {
+	SKUs := catalog.SKUs
+
+	for i := 0; i < len(SKUs); i++ {
+		if rune(SKUs[i].Name[0]) == skuName {
+			return &SKUs[i]
+		}
+	}
+
+	return nil
+}
+
+func (SKU *SKU) findMinAvailablePrice(units int32) (*PricePerUnit, error) {
+	if len(SKU.Prices) <= 0 {
 		return nil, errors.New("prices collection is empty")
 	}
 
-	minPrice := sku.Prices[0]
+	minPrice := SKU.Prices[0]
 
-	for _, price := range sku.Prices {
+	for _, price := range SKU.Prices {
 		isPriceLower := minPrice.Price/minPrice.Units > price.Price/price.Units
 		isEnoughUnits := units-price.Units >= 0
 

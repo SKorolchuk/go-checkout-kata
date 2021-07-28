@@ -1,6 +1,8 @@
-// Package checkout for the test task
-package checkout_cli
+// Package main for the test task
+package main
+
+import "fmt"
 
 func main() {
-
+	fmt.Print("TODO\r\n")
 }

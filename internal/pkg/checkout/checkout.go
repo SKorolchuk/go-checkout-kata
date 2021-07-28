@@ -1,23 +1,41 @@
 package checkout
 
 import (
-	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/processor"
+	"errors"
+	"fmt"
+	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/history"
+	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/sku"
 )
 
-// ICheckoutService is API for Checkout process
-type ICheckoutService interface {
+// Checkout is API for Checkout process
+type Checkout interface {
 	Scan(item string) error
 	GetTotalPrices() (int32, error)
 }
 
-type service struct {
+type context struct {
+	catalog     *sku.Catalog
+	scanHistory history.ScanHistory
 }
 
-var Instance ICheckoutService = &service{}
+func New(catalog *sku.Catalog) (Checkout, error) {
+	if catalog == nil || catalog.SKUs == nil {
+		return nil, errors.New("catalog is not specified")
+	}
 
-func (ctx *service) Scan(item string) error {
+	scanHistory := history.New()
+
+	ctx := context{
+		catalog:     catalog,
+		scanHistory: scanHistory,
+	}
+
+	return &ctx, nil
+}
+
+func (ctx *context) Scan(item string) error {
 	for _, skuInput := range item {
-		if err := processor.Instance.AddSKUToCheckout(skuInput); err != nil {
+		if err := ctx.tryAddSKUToCheckout(skuInput); err != nil {
 			return err
 		}
 	}
@@ -25,6 +43,42 @@ func (ctx *service) Scan(item string) error {
 	return nil
 }
 
-func (ctx *service) GetTotalPrices() (int32, error) {
-	return processor.Instance.GetTotalPrices()
+func (ctx *context) GetTotalPrices() (int32, error) {
+	result := int32(0)
+	total := ctx.scanHistory.GetTotalUnitsPerSKU()
+
+	if len(total) == 0 {
+		return result, nil
+	}
+
+	for name, count := range total {
+		SKU := ctx.catalog.GetSKUbyName(name)
+
+		if SKU == nil {
+			return 0, fmt.Errorf("SKU=%s not found", string(name))
+		}
+
+		totalPerSKU, err := SKU.GetOptimalCheckoutPrice(count)
+		if err != nil {
+			return 0, err
+		}
+
+		result += totalPerSKU
+	}
+
+	return result, nil
+}
+
+func (ctx *context) tryAddSKUToCheckout(skuInput rune) error {
+	for _, currentSKU := range ctx.catalog.SKUs {
+		if rune(currentSKU.Name[0]) == skuInput {
+			if err := ctx.scanHistory.Add(skuInput); err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
+	}
+
+	return errors.New("SKU not found")
 }

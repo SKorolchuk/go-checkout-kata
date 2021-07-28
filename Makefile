@@ -8,13 +8,14 @@ vet:
 	go vet -v ./...
 
 clean:
+	$(RM) -r bin
 	go clean
 
-# Define targets for commands
-bin/checkout-cli:
+build: clean fmt vet
 	go build -o bin/checkout-cli ./cmd/checkout-cli
 
-build: clean fmt vet bin/checkout-cli
+run:
+	go run ./cmd/checkout-cli/main.go
 
 # ==============================================================================
 # Running tests
