@@ -18,12 +18,12 @@ type context struct {
 	scanHistory history.ScanHistory
 }
 
-func New(catalog *sku.Catalog) (Checkout, error) {
+func NewCheckout(catalog *sku.Catalog) (Checkout, error) {
 	if catalog == nil || catalog.SKUs == nil {
 		return nil, errors.New("catalog is not specified")
 	}
 
-	scanHistory := history.New()
+	scanHistory := history.NewScanHistory()
 
 	ctx := context{
 		catalog:     catalog,
@@ -45,17 +45,17 @@ func (ctx *context) Scan(item string) error {
 
 func (ctx *context) GetTotalPrices() (int32, error) {
 	result := int32(0)
-	total := ctx.scanHistory.GetTotalUnitsPerSKU()
+	unitsPerSKU := ctx.scanHistory.GetTotalUnitsPerSKU()
 
-	if len(total) == 0 {
+	if len(unitsPerSKU) == 0 {
 		return result, nil
 	}
 
-	for name, count := range total {
-		SKU := ctx.catalog.GetSKUbyName(name)
+	for SKUName, count := range unitsPerSKU {
+		SKU := ctx.catalog.GetSKUbyName(SKUName)
 
 		if SKU == nil {
-			return 0, fmt.Errorf("SKU=%s not found", string(name))
+			return 0, fmt.Errorf("SKU=%s not found", string(SKUName))
 		}
 
 		totalPerSKU, err := SKU.GetOptimalCheckoutPrice(count)

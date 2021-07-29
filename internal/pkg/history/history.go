@@ -15,8 +15,8 @@ type context struct {
 	scanHistory []rune
 }
 
-// New is used to construct ScanHistory instance
-func New() ScanHistory {
+// NewScanHistory is used to construct ScanHistory instance
+func NewScanHistory() ScanHistory {
 	ctx := context{}
 	ctx.scanHistory = make([]rune, 0)
 
@@ -25,13 +25,12 @@ func New() ScanHistory {
 
 // Add is used to scan SKU item
 func (ctx *context) Add(SKUName rune) error {
-	if ctx.scanHistory != nil {
-		ctx.scanHistory = append(ctx.scanHistory, SKUName)
-
-		return nil
+	if ctx.scanHistory == nil {
+		return errors.New("history is not initialized")
 	}
 
-	return errors.New("SKU item not found")
+	ctx.scanHistory = append(ctx.scanHistory, SKUName)
+	return nil
 }
 
 // Clean is used to purge scan history

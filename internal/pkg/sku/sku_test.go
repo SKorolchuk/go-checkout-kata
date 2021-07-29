@@ -74,7 +74,6 @@ func TestGetOptimalCheckoutPrice(t *testing.T) {
 	}
 
 	t.Run("Optimal price should be 0", func(t *testing.T) {
-
 		t.Run("for emtpy SKU", func(t *testing.T) {
 			emptySKU := SKU{Name: "A", Prices: nil}
 
@@ -90,6 +89,22 @@ func TestGetOptimalCheckoutPrice(t *testing.T) {
 			actualResult, err := testSKU.GetOptimalCheckoutPrice(0)
 
 			assert.NoError(t, err)
+			assert.Equal(t, int32(0), actualResult)
+		})
+	})
+
+	t.Run("Returns error when", func(t *testing.T) {
+		t.Run("SKU Price is 0", func(t *testing.T) {
+			emptySKU := SKU{
+				Name: "A",
+				Prices: []PricePerUnit{
+					{Price: 0, Units: 0},
+				},
+			}
+
+			actualResult, err := emptySKU.GetOptimalCheckoutPrice(1)
+
+			assert.EqualError(t, err, "invalid PricePerUnit")
 			assert.Equal(t, int32(0), actualResult)
 		})
 	})

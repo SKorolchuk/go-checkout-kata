@@ -9,13 +9,13 @@ vet:
 
 clean:
 	$(RM) -r bin
-	go clean
+	go clean ./...
 
 build: clean fmt vet
 	go build -o bin/checkout-cli ./cmd/checkout-cli
 
-run:
-	go run ./cmd/checkout-cli/main.go
+run-example:
+	go run ./cmd/checkout-cli/main.go --scan-series AABCAA
 
 # ==============================================================================
 # Running tests

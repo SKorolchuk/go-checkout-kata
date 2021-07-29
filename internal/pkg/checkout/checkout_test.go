@@ -1,13 +1,10 @@
 package checkout_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/checkout"
 	"github.com/SKorolchuk/go-checkout-kata/internal/pkg/sku"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"os"
 	"testing"
 )
 
@@ -46,71 +43,48 @@ func TestCheckoutFlow(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(nameFormat(&testCase), func(t *testing.T) {
-			catalog := getTestCatalog(t)
+			catalog, err := getTestCatalog()
+			assert.NoError(t, err)
 			if catalog == nil {
 				t.Error("Failed to read test json file")
 			}
 
-			underTest, err := checkout.New(catalog)
-			if err != nil {
-				t.Error(err)
-			}
+			underTest, err := checkout.NewCheckout(catalog)
+			assert.NoError(t, err)
 
-			if err := underTest.Scan(testCase.scanInput); err != nil {
-				t.Error(err)
-			}
+			err = underTest.Scan(testCase.scanInput)
+			assert.NoError(t, err)
 
 			actualResult, err := underTest.GetTotalPrices()
-			if err != nil {
-				t.Error(err)
-			}
 
+			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedResult, actualResult)
 		})
 	}
 }
 
 func TestCheckoutError(t *testing.T) {
-	catalog := getTestCatalog(t)
+	catalog, err := getTestCatalog()
+	assert.NoError(t, err)
+
 	if catalog == nil {
 		t.Error("Failed to read test json file")
 	}
 
-	underTest, err := checkout.New(catalog)
-	if err != nil {
-		t.Error(err)
-	}
+	underTest, err := checkout.NewCheckout(catalog)
+	assert.NoError(t, err)
 
 	t.Run("Checkout should throw error for incorrect SKU names", func(t *testing.T) {
-		err := underTest.Scan("%")
-		if assert.Error(t, err) {
-			assert.EqualError(t, err, "SKU not found")
-		}
+		assert.EqualError(t, underTest.Scan("%"), "SKU not found")
 	})
 }
 
-func getTestCatalog(t *testing.T) *sku.Catalog {
-	file, err := os.Open("../../../test/.checkout_test_data/skus.json")
-	defer func() {
-		if err := file.Close(); err != nil {
-			t.Error(err)
-		}
-	}()
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	bytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		t.Error(err)
-	}
-
+func getTestCatalog() (*sku.Catalog, error) {
 	var catalog sku.Catalog
 
-	if err := json.Unmarshal(bytes, &catalog); err != nil {
-		t.Error(err)
+	if err := catalog.Load("../../../test/.checkout_test_data/skus.json"); err != nil {
+		return nil, err
 	}
 
-	return &catalog
+	return &catalog, nil
 }

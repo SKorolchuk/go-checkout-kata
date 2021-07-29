@@ -36,9 +36,10 @@ interface ICheckout
 |---|---|
 |cmd/checkout-cli|Sample CLI implementation of Checkout process|
 |internal/pkg/checkout|Folder contains package with solution of Checkout API|
-|internal/pkg/history|Folder contains API for managing Scan history|
+|internal/pkg/history|Folder contains API for managing scan history|
 |internal/pkg/sku|Folder contains SKU catalog models and methods|
 |test|SKU catalog samples which used in unit tests and CLI default configuration|
+|bin (after `make build`)|Location for executable `checkout-cli` binary file|
 
 ## Commands
 
@@ -52,21 +53,20 @@ interface ICheckout
 |make tests|Command will run all unit tests|
 |make lint|Command will run staticcheck tool|
 |make tidy|Command will sync Go modules|
-|make deps-cleancache|Command will cleam up Go modules cache|
+|make deps-cleancache|Command will clean up Go modules cache|
 |make list|Command will list Go modules|
 
 ## How To
 
-### How to run interactive mode
+### Hot to run
 
 ```bash
-~ make build
-~ ./bin/checkout-cli
+~ make run-example
 ```
-
-### Hot to run sample scenario
 
 ```bash
 ~ make build
 ~ ./bin/checkout-cli --scan-series AABCDBBA
 ```
+
+NOTE: `--scan-series` argument accepts series of SKU names presented in SKU catalog file

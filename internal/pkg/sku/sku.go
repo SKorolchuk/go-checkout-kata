@@ -1,8 +1,10 @@
 package sku
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io/ioutil"
+	"os"
 )
 
 // Catalog represents collection of SKU
@@ -31,12 +33,8 @@ func (SKU *SKU) GetOptimalCheckoutPrice(unitsToCheckout int32) (int32, error) {
 
 		for reminder > 0 {
 			minPrice, err := SKU.findMinAvailablePrice(reminder)
-			if err != nil {
+			if err != nil || minPrice == nil {
 				return 0, err
-			}
-
-			if minPrice == nil {
-				return 0, fmt.Errorf("SKU=%s prices for %d amount can not be processed", SKU.Name, reminder)
 			}
 
 			result += reminder / minPrice.Units * minPrice.Price
@@ -68,6 +66,10 @@ func (SKU *SKU) findMinAvailablePrice(units int32) (*PricePerUnit, error) {
 	minPrice := SKU.Prices[0]
 
 	for _, price := range SKU.Prices {
+		if minPrice.Units <= 0 || price.Units <= 0 {
+			return nil, errors.New("invalid PricePerUnit")
+		}
+
 		isPriceLower := minPrice.Price/minPrice.Units > price.Price/price.Units
 		isEnoughUnits := units-price.Units >= 0
 
@@ -77,4 +79,28 @@ func (SKU *SKU) findMinAvailablePrice(units int32) (*PricePerUnit, error) {
 	}
 
 	return &minPrice, nil
+}
+
+func (catalog *Catalog) Load(filePath string) error {
+	file, err := os.Open(filePath)
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(bytes, &catalog); err != nil {
+		return err
+	}
+
+	return nil
 }
