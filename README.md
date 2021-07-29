@@ -58,6 +58,10 @@ interface ICheckout
 
 ## How To
 
+### Prerequisites
+
+Install go 1.16+ and GNU make
+
 ### Hot to run
 
 ```bash
